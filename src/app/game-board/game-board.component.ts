@@ -57,7 +57,11 @@ export class GameBoardComponent implements OnInit {
   hauntInfo: boolean = false;
   death: boolean = false;
   omenShow: boolean = false;
+  omenShowDraw: boolean = false;
+  omenShowCard: boolean = false;
   eventShow: boolean = false;
+  eventShowDraw: boolean = false;
+  eventShowCard: boolean = false;
   directionShow: boolean = true;
   groundToUpstairs: boolean = false;
   hitWall: boolean = false;
@@ -69,18 +73,34 @@ export class GameBoardComponent implements OnInit {
   burielRoomId;
   buriedFriendLife: number = 0;
   movesRemaining: number = 18;
-  audio = document.getElementById("strangerTheme");
+  move: boolean = false;
+  hauntDieRoll: number = 0;
 
 
 constructor(private database: AngularFireDatabase, private gameService: GameService, private characterService: CharacterService, private route: ActivatedRoute) { }
 
   getDieRoll(){
-    console.log("audio " + this.audio);
     this.showDieRoll = true;
     setTimeout(()=>{this.showDieRoll = false;}, 6000);
     var d = document.getElementsByClassName("dice-image");
     d[0].classList.remove("diceImageFlash");
+    this.move = true;
+    console.log("getDieRoll method call- roll = " + this.dieRoll);
+    if(this.haunt === false){
+      // this.dieRoll = this.hauntDieRoll;
+      if(this.hauntCounter <= this.hauntDieRoll){
+        this.haunt = false;
+      }else{
+        this.haunt = true;
+        this.getHauntInfo();
+        this.buryFriend();
+      }
+    }
   }
+
+  // setShownDieRoll(roll: number){
+  //   this.dieRoll = roll;
+  // }
 
   buryFriend(){
     var randNum = this.gameService.getRandomNumber(0,14);
@@ -110,6 +130,25 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
   }
   setBeginningTile(){
     document.getElementById('39').classList.add('active');
+  }
+
+  drawEventCard(){
+    if(this.eventShowDraw){
+      this.eventShowDraw = false;
+      this.eventShowCard = true;
+    }
+    var d = document.getElementsByClassName("dice-image");
+    d[0].classList.add("diceImageFlash");
+  }
+
+  drawOmenCard(){
+
+    if(this.omenShowDraw){
+      this.omenShowDraw = false;
+      this.omenShowCard = true;
+    }
+    var d = document.getElementsByClassName("dice-image");
+    d[0].classList.add("diceImageFlash");
   }
 
   getOmenCardEffects(cardId: string, speed: number = null, might: number = null, sanity: number = null, knowledge: number = null, numberOfOmenCardsDrawn: number = null){
@@ -169,6 +208,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
       // console.log(damageDone);
       return damageDone;
     }
+    console.log("getOmenCardEffects method call- roll = " + this.dieRoll);
   }
 
   getEventCardEffects(cardId: string, speed: number = null, might: number = null, sanity: number = null, knowledge: number = null, numberOfOmenCardsDrawn: number = null){
@@ -188,10 +228,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     if(Number(cardId) === 15){
       var roll: number = this.gameService.diceToRoll(2);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll === 4){
         damageDone.push("sanity", 1);
@@ -217,8 +253,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 0){
       var roll: number = this.gameService.diceToRoll(speed);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("speed", 1);
@@ -235,22 +269,17 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 3){
       var roll: number = this.gameService.diceToRoll(1);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       //should be mental damage
       damageDone.push("sanity", -roll);
       var roll1: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll1;
       if(roll1 >= 5){
         damageDone.push("knowledge", 1);
       }
       else{
         var roll2: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll2;
         //should be mental damage
         damageDone.push("knowledge", -roll2);
@@ -261,23 +290,19 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     else if(Number(cardId) === 4){
       //add choice for speed or sanity
       var roll: number = this.gameService.diceToRoll(speed);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("speed", 1);
       } else if(roll >= 1){
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be physical damage
         damageDone.push("speed", -roll1);
       }
       else{
         var roll2: number = this.gameService.diceToRoll(2);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll2;
         //should be physical damage
         damageDone.push("speed", -roll2);
@@ -287,29 +312,24 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 5){
       var roll: number = this.gameService.diceToRoll(speed);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 5){
         damageDone.push("speed", 1);
       } else if(roll >= 2){
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be mental damage
         damageDone.push("knowledge", -roll1);
       }
       else{
         var roll3: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll3;
         //should be physical damage
         damageDone.push("speed", -roll3);
         var roll2: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll2;
         //should be mental damage
         damageDone.push("sanity", -roll2);
@@ -319,32 +339,29 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 6){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 1 && roll <=3){
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be mental damage
         damageDone.push("knowledge", -roll1);
       }
+      else if(roll > 3){
+        console.log("resist");
+      }
       else{
-        var roll1: number = this.gameService.diceToRoll(2);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+        var roll2: number = this.gameService.diceToRoll(2);
+
         this.dieRoll = roll2;
         //should be mental damage
-        damageDone.push("sanity", -roll1);
+        damageDone.push("sanity", -roll2);
       }
       console.log(damageDone);
       return damageDone;
     }
     else if(Number(cardId) === 7){
       var roll: number = this.gameService.diceToRoll(knowledge);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("knowledge", 1);
@@ -357,8 +374,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 8){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("sanity", 1);
@@ -368,8 +383,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
       }
       else{
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be physical damage
         damageDone.push("might", -roll1);
@@ -379,24 +393,20 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 9){
       var roll: number = this.gameService.diceToRoll(knowledge);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 5){
         damageDone.push("knowledge", 1);
         damageDone.push("sanity", 1);
       } else if(roll >= 2){
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be physical damage
         damageDone.push("speed", -roll1);
       }
       else{
         var roll2: number = this.gameService.diceToRoll(2);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll2;
         //should be physical damage
         damageDone.push("speed", -roll2);
@@ -406,16 +416,13 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 10){
       var roll: number = this.gameService.diceToRoll(6);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= numberOfOmenCardsDrawn){
         damageDone.push("sanity", 1);
       }
       else{
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be mental damage
         damageDone.push("knowledge", -roll1);
@@ -430,8 +437,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     else if(Number(cardId) === 12){
       //if in the gardens, roll 2 fewer die
       var roll: number = this.gameService.diceToRoll(knowledge);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("knowledge", 1);
@@ -439,13 +444,11 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
       else{
         //computer roll Might 4 attack
         var roll1: number = this.gameService.diceToRoll(4);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //player roll
         var roll2: number = this.gameService.diceToRoll(might);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll2;
         if (roll1 > roll2) {
           damageDone.push("might", -(roll1-roll2));
@@ -456,21 +459,17 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 13){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >=1 && roll <= 3){
         var roll1: number = this.gameService.diceToRoll(1);
-        var d = document.getElementsByClassName("dice-image");
-        d[0].classList.add("diceImageFlash");
+
         this.dieRoll = roll1;
         //should be mental damage
         damageDone.push("sanity", -roll1);
       }
       else if(roll === 0){
           var roll2: number = this.gameService.diceToRoll(2);
-          var d = document.getElementsByClassName("dice-image");
-          d[0].classList.add("diceImageFlash");
+
           this.dieRoll = roll2;
           //should be mental damage
           damageDone.push("sanity", -roll2);
@@ -481,8 +480,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 14){
       var roll: number = this.gameService.diceToRoll(knowledge);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("knowledge", 1);
@@ -496,8 +493,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 17){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 5){
         damageDone.push("sanity", 1);
@@ -518,8 +513,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 18){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("sanity", 1);
@@ -535,41 +528,33 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 19){
       var sanityRoll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = sanityRoll;
       var knowledgeRoll: number = this.gameService.diceToRoll(knowledge);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = knowledgeRoll;
       var speedRoll: number = this.gameService.diceToRoll(speed);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = speedRoll;
       var mightRoll: number = this.gameService.diceToRoll(might);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = mightRoll;
       if(sanityRoll >= 2 && knowledgeRoll >= 2 && speedRoll >= 2 && mightRoll >= 2){
         damageDone.push(chosenTrait, 1);
-      } else if(sanityRoll >= 2 || knowledgeRoll >= 2 || speedRoll >= 2 || mightRoll >= 2){
-        // console.log("nothing happens");
-      } else if(sanityRoll < 1){
+      }
+      if(sanityRoll < 2){
         damageDone.push("sanity", -1);
-      } else if(mightRoll < 1){
-        damageDone.push("might", -1);
-      } else if(speedRoll < 1){
-        damageDone.push("speed", -1);
-      } else {
+      }
+      if(knowledgeRoll < 2){
         damageDone.push("knowledge", -1);
+      }
+      if(speedRoll < 2){
+        damageDone.push("speed", -1);
+      }
+      if(mightRoll < 2){
+        damageDone.push("might", -1);
       }
       console.log(damageDone);
       return damageDone;
     }
     else if(Number(cardId) === 20){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("sanity", 1);
@@ -585,8 +570,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 21){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 5){
         damageDone.push("sanity", 1);
@@ -600,8 +583,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
       return damageDone;
     } else if(Number(cardId) === 22){
       var roll: number = this.gameService.diceToRoll(2);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("knowledge", 1);
@@ -613,8 +594,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 23){
       var roll: number = this.gameService.diceToRoll(sanity);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 4){
         damageDone.push("sanity", 1);
@@ -629,8 +608,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(Number(cardId) === 24){
       var roll: number = this.gameService.diceToRoll(knowledge);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
       this.dieRoll = roll;
       if(roll >= 5){
         damageDone.push("knowledge", 1);
@@ -638,25 +615,21 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
       // console.log(damageDone);
       return damageDone;
     }
+    console.log("getEventCardEffects method call- roll = " + this.dieRoll);
   }
 
   omenCardResolution(){
     this.omenShow = true;
+    this.omenShowDraw = true;
+    this.omenShowCard = false;
     this.eventShow = false;
+    this.eventShowCard = false;
+    this.eventShowDraw = true;
     this.directionShow = false;
     if(this.haunt === false){
       this.hauntCounter += 1;
-      var hauntDieRoll = this.gameService.diceToRoll(6);
-      var d = document.getElementsByClassName("dice-image");
-      d[0].classList.add("diceImageFlash");
-      this.dieRoll = hauntDieRoll;
-      if(this.hauntCounter <= hauntDieRoll){
-        this.haunt = false;
-      }else{
-        this.haunt = true;
-        this.getHauntInfo();
-        this.buryFriend();
-      }
+      this.hauntDieRoll = this.gameService.diceToRoll(6);
+      this.dieRoll = this.hauntDieRoll;
     }
     console.log(this.haunt + " haunt after roll");
     this.gameService.getOmenCardById(this.gameService.getRandomNumber(0,7)).subscribe(dataLastEmittedFromObserver => {
@@ -774,7 +747,11 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
 
   eventCardResolution(){
     this.eventShow = true;
+    this.eventShowDraw = true;
+    this.eventShowCard = false;
     this.omenShow = false;
+    this.omenShowCard = false;
+    this.omenShowDraw = true;
     this.directionShow = false;
     this.gameService.getEventCardById(this.gameService.getRandomNumber(0,24)).subscribe(dataLastEmittedFromObserver => {
       this.chosenEvent = dataLastEmittedFromObserver;
@@ -910,11 +887,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     this.key = event.which || event.keyCode;
     const element = document.getElementsByClassName("active");
 
-    //   if (this.startScreen === false) {
-    //   element[0].scrollIntoView(false);
-    // }
-
-
     if(this.startScreen === false){
       const element = document.getElementById(this.currentRoomTileId);
       element.scrollIntoView(false);
@@ -926,6 +898,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     }
     else if(this.key === 13){
       this.startScreen = false;
+      this.move = true;
       setTimeout(()=>{var tag = document.getElementById('knowledge');
       tag.getElementsByClassName(this.currentKnowledgeIndex)[0].classList.add('highlighted');
       var tag = document.getElementById('speed');
@@ -948,9 +921,9 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
     if(this.death === true && (this.key === 37 || this.key === 38 || this.key === 39 || this.key === 40)){
       console.log("it is the " + this.death + " death");
     }
-
     else{
       //go downstairs from upper landing
+      if(this.move === true){
       if(this.currentRoomTileId === 95 && this.key === 13){
         element[0].scrollIntoView(false);
         this.currentRoomTileId = 37;
@@ -1022,29 +995,34 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         else if(this.currentRoomTileId === 23){
           if(!this.currentRoomTileArray[0].classList.contains('graveyard')){
             this.currentRoomTileArray[0].classList.add('graveyard');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 22){
           if(!this.currentRoomTileArray[0].classList.contains('ballroom')){
             this.currentRoomTileArray[0].classList.add('ballroom');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 46){
           if(!this.currentRoomTileArray[0].classList.contains('statuaryCorridor')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('statuaryCorridor');
           }
         }
         else if(this.currentRoomTileId === 87){
           if(!this.currentRoomTileArray[0].classList.contains('operatingLaboratory')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('operatingLaboratory');
           }
         }
         else if(this.currentRoomTileId === 97){
           if(!this.currentRoomTileArray[0].classList.contains('balcony')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('balcony');
           }
@@ -1054,12 +1032,14 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 81){
           if(!this.currentRoomTileArray[0].classList.contains('attic')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('attic');
           }
         }
         else if(this.currentRoomTileId === 218){
           if(!this.currentRoomTileArray[0].classList.contains('catacombs')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('catacombs');
           }
@@ -1069,12 +1049,14 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 210){
           if(!this.currentRoomTileArray[0].classList.contains('servantsQuarters')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('servantsQuarters');
           }
         }
         else if(this.currentRoomTileId === 211){
           if(!this.currentRoomTileArray[0].classList.contains('furnaceRoom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('furnaceRoom');
           }
@@ -1082,11 +1064,13 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         else if(this.currentRoomTileId === 202){
           if(!this.currentRoomTileArray[0].classList.contains('organRoom')){
             this.currentRoomTileArray[0].classList.add('organRoom');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 203){
           if(!this.currentRoomTileArray[0].classList.contains('gymnasium')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('gymnasium');
           }
@@ -1143,29 +1127,34 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         if(this.currentRoomTileId === 29){
           if(!this.currentRoomTileArray[0].classList.contains('conservatory')){
             this.currentRoomTileArray[0].classList.add('conservatory');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 46){
           if(!this.currentRoomTileArray[0].classList.contains('statuaryCorridor')){
             this.currentRoomTileArray[0].classList.add('statuaryCorridor');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 54){
           if(!this.currentRoomTileArray[0].classList.contains('gameRoom')){
             this.currentRoomTileArray[0].classList.add('gameRoom');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 62){
           if(!this.currentRoomTileArray[0].classList.contains('kitchen')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('kitchen');
           }
         }
         else if(this.currentRoomTileId === 47){
           if(!this.currentRoomTileArray[0].classList.contains('abandonedRoom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('abandonedRoom');
           }
@@ -1176,23 +1165,27 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         else if(this.currentRoomTileId === 56){
           if(!this.currentRoomTileArray[0].classList.contains('gardens')){
             this.currentRoomTileArray[0].classList.add('gardens');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 97){
           if(!this.currentRoomTileArray[0].classList.contains('balcony')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('balcony');
           }
         }
         else if(this.currentRoomTileId === 103){
           if(!this.currentRoomTileArray[0].classList.contains('charredRoom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('charredRoom');
           }
         }
         else if(this.currentRoomTileId === 111){
           if(!this.currentRoomTileArray[0].classList.contains('gallery')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('gallery');
           }
@@ -1205,6 +1198,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 113){
           if(!this.currentRoomTileArray[0].classList.contains('chapel')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('chapel');
           }
@@ -1215,17 +1209,20 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         else if(this.currentRoomTileId === 235){
           if(!this.currentRoomTileArray[0].classList.contains('crypt')){
             this.currentRoomTileArray[0].classList.add('crypt');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 242){
           if(!this.currentRoomTileArray[0].classList.contains('researchLaboratory')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('researchLaboratory');
           }
         }
         else if(this.currentRoomTileId === 250){
           if(!this.currentRoomTileArray[0].classList.contains('vault')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('vault');
           }
@@ -1238,6 +1235,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 218){
           if(!this.currentRoomTileArray[0].classList.contains('catacombs')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('catacombs');
           }
@@ -1272,17 +1270,20 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         if(this.currentRoomTileId === 32){
           if(!this.currentRoomTileArray[0].classList.contains('library')){
             this.currentRoomTileArray[0].classList.add('library');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 48){
           if(!this.currentRoomTileArray[0].classList.contains('patio')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('patio');
           }
         }
         else if(this.currentRoomTileId === 88){
           if(!this.currentRoomTileArray[0].classList.contains('tower')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('tower');
           }
@@ -1292,6 +1293,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 104){
           if(!this.currentRoomTileArray[0].classList.contains('bedroom')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('bedroom');
           }
@@ -1301,6 +1303,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 106){
           if(!this.currentRoomTileArray[0].classList.contains('masterBedroom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('masterBedroom');
           }
@@ -1314,6 +1317,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         else if(this.currentRoomTileId === 211){
           if(!this.currentRoomTileArray[0].classList.contains('furnaceRoom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('furnaceRoom');
           }
@@ -1370,36 +1374,42 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         }
         if(this.currentRoomTileId === 30){
           if(!this.currentRoomTileArray[0].classList.contains('diningRoom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('diningRoom');
           }
         }
         else if(this.currentRoomTileId === 21){
           if(!this.currentRoomTileArray[0].classList.contains('junkroom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('junkroom');
           }
         }
         else if(this.currentRoomTileId === 87){
           if(!this.currentRoomTileArray[0].classList.contains('operatingLaboratory')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('operatingLaboratory');
           }
         }
         else if(this.currentRoomTileId === 88){
           if(!this.currentRoomTileArray[0].classList.contains('tower')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('tower');
           }
         }
         else if(this.currentRoomTileId === 103){
           if(!this.currentRoomTileArray[0].classList.contains('charredRoom')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('charredRoom');
           }
         }
         else if(this.currentRoomTileId === 104){
           if(!this.currentRoomTileArray[0].classList.contains('bedroom')){
+            this.move = false;
             this.eventCardResolution();
             this.currentRoomTileArray[0].classList.add('bedroom');
           }
@@ -1407,6 +1417,7 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         //basement
         else if(this.currentRoomTileId === 210){
           if(!this.currentRoomTileArray[0].classList.contains('servantsQuarters')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('servantsQuarters');
           }
@@ -1414,17 +1425,20 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
         else if(this.currentRoomTileId === 209){
           if (!this.currentRoomTileArray[0].classList.contains('undergroundLake')){
             this.currentRoomTileArray[0].classList.add('undergroundLake');
+            this.move = false;
             this.eventCardResolution();
           }
         }
         else if(this.currentRoomTileId === 225){
           if(!this.currentRoomTileArray[0].classList.contains('pentagramChamber')){
+            this.move = false;
             this.omenCardResolution();
             this.currentRoomTileArray[0].classList.add('pentagramChamber');
           }
         }
       }
     }
+  }
   }
 
   getCharacterById(charId: string){
@@ -1461,11 +1475,6 @@ constructor(private database: AngularFireDatabase, private gameService: GameServ
       this.grandStaircase = dataLastEmittedFromObserver[2];
     })
 
-
-
-    // const activeElem = this.currentRoomTileArray[0].classList.contains('active');
-    // var tag = document.getElementById('might');
-    // tag.getElementsByClassName(this.currentMightIndex)[0].classList.remove('highlighted');
   }
 
 }
